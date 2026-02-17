@@ -20,7 +20,7 @@ const config = createConfig({
 });
 
 export function useMounted() {
-  const [mounted, setMounted] = useState(false)
+  const [mounted, setMounted] = useState<boolean>(false)
 
   useEffect(() => {
     setMounted(true)

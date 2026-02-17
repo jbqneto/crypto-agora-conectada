@@ -1,28 +1,16 @@
 "use client"
 
 import { useState, useRef, useCallback, useEffect } from "react"
-import { Wallet, Lock, CheckCircle2, Vote, Zap, Shield, Star, Users, PlusCircle, ChevronLeft, ChevronRight } from "lucide-react"
+import { Wallet, Vote, Zap, Shield, Star, Users, PlusCircle, ChevronLeft, ChevronRight } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useWallet } from "@/app/providers/wallet-provider"
-import { Progress } from "@/components/ui/progress"
 import { CreatePollModal } from "@/components/create-poll-modal"
 import { useReadContract } from "wagmi"
 import { contractAbi, contractAddress } from "@/lib/voting-contract"
+import { Poll, VotingContract, Votings } from "./votings"
+import { useMounted } from "@/app/providers/providers"
 
-interface Poll {
-  id: number
-  question: string
-  options: {
-    label: string
-    votes: number
-  }[]
-  totalVotes: number
-  endsIn: string
-  category: string
-  isUserCreated?: boolean
-}
-
-const INITIAL_POLLS: Poll[] = [
+const INITIAL_POLLS = [
   {
     id: 1,
     question: "Qual blockchain tera o maior crescimento em 2026?",
@@ -109,20 +97,19 @@ const SUPER_POWERS = [
 ]
 
 export function VotingSection() {
-  const { isConnected, isConnecting, connect } = useWallet()
-  const [votedPolls, setVotedPolls] = useState<Record<number, number>>({})
-  const [polls, setPolls] = useState<Poll[]>(INITIAL_POLLS)
+  const { isConnected, isConnecting, connect } = useWallet();
+  const mounted = useMounted();
+  const [votingContracts, setVotingContracts] = useState<VotingContract[]>([]);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
   const scrollRef = useRef<HTMLDivElement>(null)
-  const [currentPage, setCurrentPage] = useState(0)
+  const [currentPage, setCurrentPage] = useState(0);
+  const [totalPages, setTotalPages] = useState(1);
   const [cardsPerView, setCardsPerView] = useState(3)
-  const { data } = useReadContract({
+  const { data: totalVotingsData } = useReadContract({
     address: contractAddress,
     abi: contractAbi,
     functionName: "totalVotings",
   });
-
-  const totalPages = Math.ceil(polls.length / cardsPerView)
 
   useEffect(() => {
     const checkWidth = () => {
@@ -139,11 +126,42 @@ export function VotingSection() {
   }, [])
 
   useEffect(() => {
-    console.log("Wallet connection status changed:", isConnected);
+    const totalVotings = typeof totalVotingsData === "bigint" ? Number(totalVotingsData) : 0;
 
-    console.log("--- votings from contract:", data);
+    if (totalVotings == 0) return;
 
-  }, [isConnected]);
+    setTotalPages(Math.ceil(totalVotings / cardsPerView) || 1);
+
+    setVotingContracts(Array.from({ length: totalVotings }, (_, i) => ({
+      id: i,
+      abi: contractAbi,
+      address: contractAddress,
+    })));
+
+  }, [totalVotingsData]);
+
+
+  const handlePollCreated = (newPollData: {
+    question: string
+    options: string[]
+    category: string
+    duration: string
+  }) => {
+    const newPoll: Poll = {
+      id: Date.now(),
+      question: newPollData.question,
+      options: newPollData.options.map((label) => ({ label, votes: 0 })),
+      totalVotes: 0,
+      endsIn: `${newPollData.duration} dias`,
+      category: newPollData.category.charAt(0).toUpperCase() + newPollData.category.slice(1),
+      isUserCreated: true,
+    }
+
+    //TODO: Send to blockchain
+    console.log("Nova enquete criada:", newPoll);
+
+  }
+
 
   const scrollToPage = useCallback(
     (page: number) => {
@@ -171,33 +189,6 @@ export function VotingSection() {
     const page = Math.round(scrollPos / (cardsPerView * (cardWidth + gap)))
     setCurrentPage(Math.min(page, totalPages - 1))
   }, [cardsPerView, totalPages])
-
-  const handleVote = (pollId: number, optionIndex: number) => {
-    if (!isConnected) return
-    setVotedPolls((prev) => ({ ...prev, [pollId]: optionIndex }))
-  }
-
-  const handlePollCreated = (newPollData: {
-    question: string
-    options: string[]
-    category: string
-    duration: string
-  }) => {
-    const newPoll: Poll = {
-      id: Date.now(),
-      question: newPollData.question,
-      options: newPollData.options.map((label) => ({ label, votes: 0 })),
-      totalVotes: 0,
-      endsIn: `${newPollData.duration} dias`,
-      category: newPollData.category.charAt(0).toUpperCase() + newPollData.category.slice(1),
-      isUserCreated: true,
-    }
-    setPolls((prev) => [newPoll, ...prev])
-    setCurrentPage(0)
-    scrollToPage(0)
-  }
-
-  const totalGlobalVotes = polls.reduce((acc, p) => acc + p.totalVotes, 0)
 
   return (
     <section id="votacoes" className="space-y-6">
@@ -255,7 +246,7 @@ export function VotingSection() {
       )}
 
       {/* Connected user bar with Create Poll button */}
-      {isConnected && (
+      {mounted && isConnected && (
         <div className="rounded-xl border border-primary/20 bg-primary/5 p-4 flex flex-col sm:flex-row items-start sm:items-center gap-3">
           <div className="flex items-center gap-3 flex-1">
             <div className="h-2.5 w-2.5 rounded-full bg-primary animate-pulse-glow shrink-0" />
@@ -265,7 +256,7 @@ export function VotingSection() {
             <div className="hidden sm:flex items-center gap-1.5 ml-auto mr-3">
               <Users className="h-3.5 w-3.5 text-muted-foreground" />
               <span className="text-xs text-muted-foreground font-mono">
-                {totalGlobalVotes.toLocaleString("pt-BR")} votos totais
+                {0} votos totais
               </span>
             </div>
           </div>
@@ -304,122 +295,16 @@ export function VotingSection() {
           </button>
         )}
 
-        {/* Scrollable container */}
         <div
           ref={scrollRef}
           onScroll={handleScroll}
           className="flex gap-4 overflow-x-auto snap-x snap-mandatory scrollbar-hide"
           style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
         >
-          {polls.map((poll) => {
-            const hasVoted = votedPolls[poll.id] !== undefined
-            const userVote = votedPolls[poll.id]
-            const totalWithUserVote = hasVoted ? poll.totalVotes + 1 : poll.totalVotes
-
-            return (
-              <div
-                key={poll.id}
-                className={`snap-start shrink-0 w-full lg:w-[calc((100%-2rem)/3)] rounded-xl border bg-card p-5 flex flex-col ${
-                  poll.isUserCreated
-                    ? "border-primary/30 ring-1 ring-primary/10"
-                    : "border-border"
-                }`}
-              >
-                <div className="flex items-center gap-2 mb-3">
-                  <span className="text-[10px] font-mono text-primary uppercase tracking-wider px-2 py-0.5 rounded-full bg-primary/10 border border-primary/20">
-                    {poll.category}
-                  </span>
-                  {poll.isUserCreated && (
-                    <span className="text-[10px] font-mono text-foreground uppercase tracking-wider px-2 py-0.5 rounded-full bg-secondary border border-border">
-                      Sua enquete
-                    </span>
-                  )}
-                  <span className="text-[10px] text-muted-foreground ml-auto">
-                    Encerra em {poll.endsIn}
-                  </span>
-                </div>
-                <h4 className="text-sm font-bold text-foreground mb-4 leading-snug text-balance">
-                  {poll.question}
-                </h4>
-                <div className="space-y-2 flex-1">
-                  {poll.options.map((option, i) => {
-                    const optVotes = i === userVote ? option.votes + 1 : option.votes
-                    const percentage =
-                      totalWithUserVote > 0
-                        ? (optVotes / totalWithUserVote) * 100
-                        : 0
-
-                    return (
-                      <button
-                        key={option.label}
-                        onClick={() => handleVote(poll.id, i)}
-                        disabled={!isConnected || hasVoted}
-                        className={`w-full text-left relative rounded-lg border p-3 transition-all ${
-                          !isConnected
-                            ? "opacity-60 cursor-not-allowed border-border"
-                            : hasVoted
-                            ? i === userVote
-                              ? "border-primary/40 bg-primary/5"
-                              : "border-border bg-secondary/20"
-                            : "border-border hover:border-primary/30 hover:bg-secondary/50 cursor-pointer"
-                        }`}
-                      >
-                        <div className="flex items-center justify-between relative z-10">
-                          <div className="flex items-center gap-2">
-                            {hasVoted && i === userVote && (
-                              <CheckCircle2 className="h-3.5 w-3.5 text-primary shrink-0" />
-                            )}
-                            {!isConnected && (
-                              <Lock className="h-3 w-3 text-muted-foreground shrink-0" />
-                            )}
-                            <span
-                              className={`text-xs font-medium ${
-                                hasVoted && i === userVote
-                                  ? "text-primary"
-                                  : "text-foreground"
-                              }`}
-                            >
-                              {option.label}
-                            </span>
-                          </div>
-                          {(hasVoted || !isConnected) && (
-                            <span className="text-[11px] font-mono text-muted-foreground">
-                              {percentage.toFixed(1)}%
-                            </span>
-                          )}
-                        </div>
-                        {(hasVoted || !isConnected) && (
-                          <div className="mt-2">
-                            <Progress value={percentage} className="h-1 bg-secondary" />
-                          </div>
-                        )}
-                      </button>
-                    )
-                  })}
-                </div>
-                <div className="mt-4 pt-3 border-t border-border flex items-center justify-between">
-                  <span className="text-[10px] text-muted-foreground font-mono">
-                    {totalWithUserVote.toLocaleString("pt-BR")} votos
-                  </span>
-                  {hasVoted && (
-                    <span className="text-[10px] text-primary font-medium flex items-center gap-1">
-                      <CheckCircle2 className="h-3 w-3" />
-                      Voto registrado
-                    </span>
-                  )}
-                  {!isConnected && (
-                    <span className="text-[10px] text-muted-foreground flex items-center gap-1">
-                      <Lock className="h-3 w-3" />
-                      Conecte a wallet para votar
-                    </span>
-                  )}
-                </div>
-              </div>
-            )
-          })}
+          <Votings isConnected={isConnected} contracts={votingContracts} />
         </div>
-      </div>
 
+      </div>
       {/* Carousel Navigation Dots & Page Info */}
       {totalPages > 1 && (
         <div className="flex flex-col items-center gap-3">

@@ -1,7 +1,9 @@
+import { Abi } from "viem";
+
 export const contractAddress =
   "0x3eb66f9D30843D258411684dff71c3D108d544a4";
 
-export const contractAbi = [
+export const contractAbi: Abi = [
   {
     name: "totalVotings",
     type: "function",
