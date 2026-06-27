@@ -1,4 +1,5 @@
-import { ArrowRight } from "lucide-react";
+import { useEffect, useState } from "react";
+import { ArrowRight, ChevronLeft, ChevronRight } from "lucide-react";
 
 interface FeaturedArticle {
   id: number;
@@ -15,14 +16,39 @@ const articles: FeaturedArticle[] = [
     excerpt:
       "O CLARITY Act pode ser uma das leis mais importantes para o futuro do mercado cripto nos Estados Unidos. O projeto busca criar regras claras para ativos digitais...",
   },
+  {
+    id: 2,
+    category: "Bitcoin",
+    title: "Bitcoin Rompe Resistência Histórica e Mira Novo Topo Acima de US$ 150 mil",
+    excerpt:
+      "Com fluxo institucional recorde nos ETFs e escassez pós-halving, analistas projetam um ciclo de alta sustentado pelas próximas semanas...",
+  },
+  {
+    id: 3,
+    category: "DeFi",
+    title: "TVL do DeFi Ultrapassa US$ 200 Bilhões e Marca Nova Era da Finança Descentralizada",
+    excerpt:
+      "Protocolos de empréstimo e liquid staking impulsionam o crescimento, com Ethereum mantendo a liderança absoluta no setor...",
+  },
 ];
 
 const FeaturedHero = () => {
-  const article = articles[0];
+  const [index, setIndex] = useState(0);
+
+  useEffect(() => {
+    const id = setInterval(() => {
+      setIndex((i) => (i + 1) % articles.length);
+    }, 6000);
+    return () => clearInterval(id);
+  }, []);
+
+  const article = articles[index];
+
+  const go = (dir: number) =>
+    setIndex((i) => (i + dir + articles.length) % articles.length);
 
   return (
     <section className="relative overflow-hidden rounded-2xl border border-border">
-      {/* Background gradient layers */}
       <div
         className="absolute inset-0"
         style={{
@@ -31,8 +57,6 @@ const FeaturedHero = () => {
         }}
       />
       <div className="absolute inset-0 bg-[linear-gradient(180deg,transparent_30%,hsl(var(--background)/0.6)_100%)]" />
-
-      {/* Decorative grid */}
       <div
         className="absolute inset-0 opacity-[0.05]"
         style={{
@@ -43,7 +67,7 @@ const FeaturedHero = () => {
       />
 
       <div className="relative grid gap-8 p-8 sm:p-10 lg:grid-cols-5 lg:p-14">
-        <div className="lg:col-span-3 space-y-5">
+        <div key={article.id} className="lg:col-span-3 space-y-5 fade-in">
           <span className="inline-flex items-center rounded-full border border-primary/30 bg-primary/10 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-primary">
             {article.category}
           </span>
@@ -65,11 +89,13 @@ const FeaturedHero = () => {
               <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
             </a>
             <div className="hidden items-center gap-2 sm:flex">
-              {[0, 1, 2, 3].map((i) => (
-                <span
+              {articles.map((_, i) => (
+                <button
                   key={i}
+                  onClick={() => setIndex(i)}
+                  aria-label={`Ir para notícia ${i + 1}`}
                   className={`h-1 rounded-full transition-all ${
-                    i === 0 ? "w-8 bg-primary" : "w-4 bg-border"
+                    i === index ? "w-8 bg-primary" : "w-4 bg-border hover:bg-muted-foreground"
                   }`}
                 />
               ))}
@@ -77,7 +103,6 @@ const FeaturedHero = () => {
           </div>
         </div>
 
-        {/* Visual side */}
         <div className="relative hidden lg:col-span-2 lg:block">
           <div className="absolute inset-0 flex items-center justify-center">
             <div className="relative h-64 w-64">
@@ -90,6 +115,22 @@ const FeaturedHero = () => {
             </div>
           </div>
         </div>
+
+        {/* Carousel arrows */}
+        <button
+          onClick={() => go(-1)}
+          aria-label="Notícia anterior"
+          className="absolute left-3 top-1/2 -translate-y-1/2 rounded-full border border-border bg-card/70 p-2 text-foreground backdrop-blur transition hover:bg-card"
+        >
+          <ChevronLeft className="h-4 w-4" />
+        </button>
+        <button
+          onClick={() => go(1)}
+          aria-label="Próxima notícia"
+          className="absolute right-3 top-1/2 -translate-y-1/2 rounded-full border border-border bg-card/70 p-2 text-foreground backdrop-blur transition hover:bg-card"
+        >
+          <ChevronRight className="h-4 w-4" />
+        </button>
       </div>
     </section>
   );

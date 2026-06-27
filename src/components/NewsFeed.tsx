@@ -144,17 +144,18 @@ const NewsFeed = () => {
 
   return (
     <section id="noticias" className="space-y-6">
-      <div className="flex items-end justify-between border-b border-border pb-3">
+      <div className="flex items-end justify-between border-b border-border pb-2">
         <div>
           <h2 className="font-heading text-2xl font-bold text-foreground">Últimas Análises</h2>
-          <p className="mt-1 text-xs uppercase tracking-wider text-muted-foreground">
+          <p className="mt-1 text-[10px] uppercase tracking-wider text-muted-foreground">
             Cobertura editorial em tempo real
           </p>
         </div>
         <a href="#" className="text-xs font-semibold uppercase tracking-wider text-primary hover:underline">
-          Ver arquivo →
+          Ver mais →
         </a>
       </div>
+
 
       {/* Featured + grid */}
       <div className="grid gap-4 md:grid-cols-2">
