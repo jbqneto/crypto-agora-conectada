@@ -66,8 +66,9 @@ const VotingSection = ({ isWalletConnected, onConnectWallet }: VotingSectionProp
       </div>
 
       <p className="text-sm text-muted-foreground">
-        Votações registradas em smart contract. Transparência e imutabilidade garantidas pela blockchain.
+        Votações registradas em smart contract. Transparência e imutabilidade garantidas pela blockchain. Ao conectar sua carteira você também poderá <span className="text-foreground font-medium">criar suas próprias votações</span>.
       </p>
+
 
       {!isWalletConnected ? (
         <div className="card-glass p-8 text-center space-y-4 pulse-glow">
@@ -79,8 +80,9 @@ const VotingSection = ({ isWalletConnected, onConnectWallet }: VotingSectionProp
               Conecte sua carteira e dê super poderes a este site
             </h3>
             <p className="text-sm text-muted-foreground">
-              Ao conectar sua carteira, você poderá votar em enquetes on-chain, participar de decisões da comunidade e muito mais.
+              Ao conectar sua carteira, você poderá votar em enquetes on-chain, <span className="text-foreground font-medium">criar suas próprias votações</span> e participar das decisões da comunidade.
             </p>
+
           </div>
           <Button onClick={onConnectWallet} className="gap-2">
             <Lock className="h-4 w-4" />

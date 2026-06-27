@@ -5,7 +5,7 @@ import FeaturedHero from "@/components/FeaturedHero";
 import NewsFeed from "@/components/NewsFeed";
 import Sidebar from "@/components/Sidebar";
 import VotingSection from "@/components/VotingSection";
-import WalletBanner from "@/components/WalletBanner";
+
 import Footer from "@/components/Footer";
 
 const Index = () => {
@@ -26,7 +26,6 @@ const Index = () => {
         <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
           <div className="space-y-10 lg:col-span-2">
             <NewsFeed />
-            <WalletBanner isWalletConnected={isWalletConnected} onConnectWallet={handleConnectWallet} />
             <VotingSection isWalletConnected={isWalletConnected} onConnectWallet={handleConnectWallet} />
           </div>
 
@@ -42,3 +41,4 @@ const Index = () => {
 };
 
 export default Index;
+
